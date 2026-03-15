@@ -1,0 +1,47 @@
+kind: workflow
+name: sequential-workflow
+trigger:
+  kind: OnConversationStart
+  id: trigger_wf
+  actions:
+    - kind: InvokeAzureAgent
+      id: agent1
+      agent:
+        name: Marketing-Analyst
+      description: First agent in sequential workflow
+      conversationId: =System.ConversationId
+      input:
+        messages: =System.LastMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+    - kind: InvokeAzureAgent
+      id: agent2
+      agent:
+        name: Marketing-Copywrite
+      conversationId: =System.ConversationId
+      description: Second agent in sequential workflow
+      input:
+        messages: =Local.LatestMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+    - kind: InvokeAzureAgent
+      id: agent3
+      agent:
+        name: Marketing-Editor
+      conversationId: =System.ConversationId
+      description: Third agent in sequential workflow
+      input:
+        messages: =Local.LatestMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+id: ""
+description: ""
+
+# Sticky Notes
+# STICKY_NOTE: {"id":"sticky_1761166535807_awv9le4bg","text":"Create and connect a /Marketing-Analyst/ agent with following instructions:\n\nYou are a marketing analyst. Given a product description, identify: \nKey features\nTarget audience\nUnique selling points","width":305,"height":260,"x":"118.53985056039915","y":"-273.14943960149435"}
+# STICKY_NOTE: {"id":"sticky_1761166557820_yn7ggfd41","text":"Create and connect a /Marketing-Copywriter/ agent with following instructions:\n\nYou are a marketing copywriter. Given a block of text describing features, audience, and USPs, compose a compelling marketing copy (like a newsletter section) that highlights these points. Output should be short (around 150 words), output just the copy as a single text block.","width":312,"height":287,"x":"452.8947696139478","y":"-300.8293897882939"}
+# STICKY_NOTE: {"id":"sticky_1761166563177_yntzuqr31","text":"Create and connect a /Marketing-Editor/ agent with following instructions:\n\nYou are an editor. Given the draft copy, correct grammar, improve clarity, ensure consistent tone, give format and make it polished. Output the final improved copy as a single text block.","width":331,"height":227,"x":"787.7621419676211","y":"-244.8393524283935"}
+
