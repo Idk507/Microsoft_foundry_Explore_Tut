@@ -1,0 +1,93 @@
+kind: workflow
+name: research-chat-workflow
+
+trigger:
+  kind: OnConversationStart
+  id: trigger_wf
+
+  actions:
+
+    - kind: SetVariable
+      id: capture_user_message
+      variable: Local.LatestMessage
+      value: =UserMessage(System.LastMessageText)
+
+
+    - kind: InvokeAzureAgent
+      id: intent_classifier
+      description: Classify the user query intent
+      conversationId: =System.ConversationId
+      agent:
+        name: intent-classifier
+      input:
+        messages: =Local.LatestMessage
+      output:
+        messages: Local.IntentMessage
+        autoSend: false
+
+
+    - kind: ConditionGroup
+      id: intent_router
+
+      conditions:
+
+        - id: research_flow
+          condition: =Contains(Upper(Last(Local.IntentMessage).Text),"RESEARCH")
+
+          actions:
+
+            - kind: InvokeAzureAgent
+              id: web_research_agent
+              description: Gather information from the web
+              conversationId: =System.ConversationId
+              agent:
+                name: Web-Research-Agent
+              input:
+                messages: =Local.LatestMessage
+              output:
+                messages: Local.ResearchMessage
+                autoSend: false
+
+
+            - kind: InvokeAzureAgent
+              id: summarization_agent
+              description: Summarize the research findings
+              conversationId: =System.ConversationId
+              agent:
+                name: Summarization-Agent
+              input:
+                messages: =Local.ResearchMessage
+              output:
+                messages: Local.SummaryMessage
+                autoSend: false
+
+
+            - kind: InvokeAzureAgent
+              id: response_agent
+              description: Generate the final answer
+              conversationId: =System.ConversationId
+              agent:
+                name: Response-agent
+              input:
+                messages: =Local.SummaryMessage
+              output:
+                messages: Local.FinalMessage
+                autoSend: true
+
+
+      elseActions:
+
+        - kind: InvokeAzureAgent
+          id: general_chat_agent
+          description: Handle normal chat queries
+          conversationId: =System.ConversationId
+          agent:
+            name: General-Chat-Agent
+          input:
+            messages: =Local.LatestMessage
+          output:
+            messages: Local.FinalMessage
+            autoSend: true
+
+id: ""
+description: ""
