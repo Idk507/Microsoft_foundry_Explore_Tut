@@ -8,13 +8,11 @@ trigger:
   id: trigger_wf
   actions:
 
-    # Step 1: Capture user input
-    - kind: Question
-      id: question_user_input
+    # Step 1: Store the user's first message directly — no Question prompt
+    - kind: SetVariable
+      id: set_user_input
       variable: Local.UserInput
-      prompt: "How can I help you today?"
-      entity: StringPrebuiltEntity
-      alwaysPrompt: false
+      value: =System.LastMessage.Text
 
     # Step 2: Intent Classifier Agent
     - kind: InvokeAzureAgent
@@ -26,10 +24,10 @@ trigger:
       input:
         messages: =UserMessage(Local.UserInput)
       output:
+        messages: Local.IntentMessages
         autoSend: false
-        responseObject: Local.IntentResult
 
-    # Step 3: Parse the intent JSON response
+    # Step 3: Parse intent value from agent text response
     - kind: ParseValue
       id: parse_intent
       variable: Local.ParsedIntent
@@ -37,7 +35,7 @@ trigger:
         kind: Record
         properties:
           intent: String
-      value: =Text(Last(Local.IntentResult).Text)
+      value: =Last(Local.IntentMessages).Text
 
     # Step 4: Route based on parsed intent
     - kind: ConditionGroup
@@ -91,7 +89,7 @@ trigger:
             # 4d: Send final research response to user
             - kind: SendActivity
               id: send_research_response
-              activity: "{Last(Local.LatestMessage).Text}"
+              activity: =Last(Local.LatestMessage).Text
 
       # --- Chat Flow (else) ---
       elseActions:
@@ -112,4 +110,4 @@ trigger:
         # 4f: Send chat response to user
         - kind: SendActivity
           id: send_chat_response
-          activity: "{Last(Local.LatestMessage).Text}"
+          activity: =Last(Local.LatestMessage).Text
