@@ -1,0 +1,62 @@
+kind: workflow
+name: group-chat-workflow
+trigger:
+  kind: OnConversationStart
+  id: trigger_wf
+  actions:
+    - kind: SetVariable
+      id: set_variable_input_task
+      variable: Local.LatestMessage
+      value: =UserMessage(System.LastMessageText)
+    - kind: InvokeAzureAgent
+      id: student_agent
+      description: The student node
+      conversationId: =System.ConversationId
+      agent:
+        name: student-agent
+      input:
+        messages: =Local.LatestMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+    - kind: InvokeAzureAgent
+      id: teacher_agent
+      description: The teacher node
+      conversationId: =System.ConversationId
+      agent:
+        name: teacher
+      input:
+        messages: =Local.LatestMessage
+      output:
+        messages: Local.LatestMessage
+        autoSend: true
+    - kind: SetVariable
+      id: set_variable_turncount
+      variable: Local.TurnCount
+      value: =Local.TurnCount + 1
+    - kind: ConditionGroup
+      id: completion_check
+      conditions:
+        - condition: =!IsBlank(Find("[COMPLETE]", Upper(Last(Local.LatestMessage).Text)))
+          id: check_done
+          actions:
+            - kind: EndConversation
+              id: end_workflow
+        - condition: =Local.TurnCount >= 4
+          id: check_turn_count_exceeded
+          actions:
+            - kind: SendActivity
+              id: send_activity_tired
+              activity: Let's try again later...I am tired.
+      elseActions:
+        - kind: GotoAction
+          id: goto_student_agent
+          actionId: student_agent
+id: ""
+description: ""
+
+# Sticky Notes
+# STICKY_NOTE: {"id":"sticky_1761067513743_zmipoxhdd","text":"Create and invoke a /student-agent/ with the following instructions:\n\nYou are a student who responds to questions from the teacher. Whenever the teacher asks you a question, you should provide an answer.","width":350,"height":200,"x":"339.6038083538083","y":"-37.240786240786235"}
+# STICKY_NOTE: {"id":"sticky_1761067584448_c4sm9tzyq","text":"Create and invoke a /teacher-agent/ with the following instructions:\n\nInstructions: You are a teacher who creates pre-school math questions for students and checks their answers. If the answer is correct, you stop the conversation by saying [COMPLETE]. If the answer is wrong, you ask the student to fix it.","width":350,"height":200,"x":"711.4305896805897","y":"-40.18058968058966"}
+
+
