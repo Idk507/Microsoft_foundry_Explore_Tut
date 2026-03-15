@@ -1,5 +1,7 @@
 kind: workflow
 name: research-chat-workflow
+id: ""
+description: Routes user input to research or chat flow
 
 trigger:
   kind: OnConversationStart
@@ -11,7 +13,6 @@ trigger:
       id: capture_user_message
       variable: Local.LatestMessage
       value: =UserMessage(System.LastMessageText)
-
 
     - kind: InvokeAzureAgent
       id: intent_classifier
@@ -25,14 +26,12 @@ trigger:
         messages: Local.IntentMessage
         autoSend: false
 
-
     - kind: ConditionGroup
       id: intent_router
-
       conditions:
 
         - id: research_flow
-          condition: =Contains(Upper(Last(Local.IntentMessage).Text),"RESEARCH")
+          condition: =Find("RESEARCH", Upper(Last(Local.IntentMessage).Text)) >= 0
 
           actions:
 
@@ -48,7 +47,6 @@ trigger:
                 messages: Local.ResearchMessage
                 autoSend: false
 
-
             - kind: InvokeAzureAgent
               id: summarization_agent
               description: Summarize the research findings
@@ -61,7 +59,6 @@ trigger:
                 messages: Local.SummaryMessage
                 autoSend: false
 
-
             - kind: InvokeAzureAgent
               id: response_agent
               description: Generate the final answer
@@ -72,8 +69,11 @@ trigger:
                 messages: =Local.SummaryMessage
               output:
                 messages: Local.FinalMessage
-                autoSend: true
+                autoSend: false
 
+            - kind: SendActivity
+              id: send_research_response
+              activity: "{Last(Local.FinalMessage).Text}"
 
       elseActions:
 
@@ -87,7 +87,8 @@ trigger:
             messages: =Local.LatestMessage
           output:
             messages: Local.FinalMessage
-            autoSend: true
+            autoSend: false
 
-id: ""
-description: ""
+        - kind: SendActivity
+          id: send_chat_response
+          activity: "{Last(Local.FinalMessage).Text}"
