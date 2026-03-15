@@ -1,0 +1,115 @@
+kind: workflow
+name: intent-router-workflow
+description: Routes user input to either a Research flow or a General Chat flow based on intent classification
+id: ""
+
+trigger:
+  kind: OnConversationStart
+  id: trigger_wf
+  actions:
+
+    # Step 1: Capture user input
+    - kind: Question
+      id: question_user_input
+      variable: Local.UserInput
+      prompt: "How can I help you today?"
+      entity: StringPrebuiltEntity
+      alwaysPrompt: false
+
+    # Step 2: Intent Classifier Agent
+    - kind: InvokeAzureAgent
+      id: intent_classifier_agent
+      agent:
+        name: intent-classifier
+      conversationId: =System.ConversationId
+      description: Classifies the user's intent as either "research" or "chat"
+      input:
+        messages: =UserMessage(Local.UserInput)
+      output:
+        autoSend: false
+        responseObject: Local.IntentResult
+
+    # Step 3: Parse the intent JSON response
+    - kind: ParseValue
+      id: parse_intent
+      variable: Local.ParsedIntent
+      valueType:
+        kind: Record
+        properties:
+          intent: String
+      value: =Text(Last(Local.IntentResult).Text)
+
+    # Step 4: Route based on parsed intent
+    - kind: ConditionGroup
+      id: intent_router
+      conditions:
+
+        # --- Research Flow ---
+        - id: research_branch
+          condition: =Lower(Local.ParsedIntent.intent) = "research"
+          actions:
+
+            # 4a: Web Research Agent
+            - kind: InvokeAzureAgent
+              id: web_research_agent
+              agent:
+                name: Web-Research-Agent
+              conversationId: =System.ConversationId
+              description: Searches the web and retrieves relevant information
+              input:
+                messages: =UserMessage(Local.UserInput)
+              output:
+                messages: Local.LatestMessage
+                autoSend: false
+
+            # 4b: Summarization Agent
+            - kind: InvokeAzureAgent
+              id: summarization_agent
+              agent:
+                name: Summarization-Agent
+              conversationId: =System.ConversationId
+              description: Summarizes the raw research output
+              input:
+                messages: =Local.LatestMessage
+              output:
+                messages: Local.LatestMessage
+                autoSend: false
+
+            # 4c: Response Agent
+            - kind: InvokeAzureAgent
+              id: research_response_agent
+              agent:
+                name: Response-agent
+              conversationId: =System.ConversationId
+              description: Formats and polishes the summarized research into a final response
+              input:
+                messages: =Local.LatestMessage
+              output:
+                messages: Local.LatestMessage
+                autoSend: false
+
+            # 4d: Send final research response to user
+            - kind: SendActivity
+              id: send_research_response
+              activity: "{Last(Local.LatestMessage).Text}"
+
+      # --- Chat Flow (else) ---
+      elseActions:
+
+        # 4e: General Chat Agent
+        - kind: InvokeAzureAgent
+          id: general_chat_agent
+          agent:
+            name: General-Chat-Agent
+          conversationId: =System.ConversationId
+          description: Handles general conversation queries
+          input:
+            messages: =UserMessage(Local.UserInput)
+          output:
+            messages: Local.LatestMessage
+            autoSend: false
+
+        # 4f: Send chat response to user
+        - kind: SendActivity
+          id: send_chat_response
+          activity: "{Last(Local.LatestMessage).Text}"
