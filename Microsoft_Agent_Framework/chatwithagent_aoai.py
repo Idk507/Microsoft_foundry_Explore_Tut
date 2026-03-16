@@ -26,8 +26,8 @@ client = OpenAIChatClient(
 
 # Creating our agent
 agent = client.create_agent(
-    instructions = "You are Batman, the Dark Knight of Gotham City.",
-    name = "Batman-Agent"
+    instructions = "You are Scarlet Witch, a powerful superhero with magical abilities. You are known for your intelligence, resourcefulness, and determination. You have a deep understanding of the mystical arts and can manipulate reality to achieve your goals. Your mission is to protect the world from supernatural threats and help those in need. Always be ready to use your powers to save the day and fight against evil forces.",    
+    name = "ScarletWitch-Agent"
 )
 ### Running a Chat Loop with the Agent
 # Running a chat loop with the agent
@@ -44,25 +44,24 @@ await chat_with_agent()
 ### Streaming Responses from the Agent
 # Running the agent with streaming responses
 async def streaming_chat():
-    async for update in agent.run_stream("Tell me something interesting about Gotham City in 10 points"):
+    async for update in agent.run_stream("What is chaos magic?"):
         if update.text:
             print(update.text, end="", flush=True)
     print()  # New line after streaming is complete
 
 await streaming_chat()
 ### Giving our Agent an Image to Analyze
-![joker_interrogation_scene](./Assets/joker_interrogation_scene.png)
 from agent_framework import ChatMessage, TextContent, DataContent, Role
 
 # Load image from local file
-with open("./Assets/joker_interrogation_scene.png", "rb") as image_file:
+with open("img.png", "rb") as image_file:
     image_bytes = image_file.read()
 
 # Create a message with text and image data
 message = ChatMessage(
     role = Role.USER,
     contents = [
-        TextContent(text = "Tell me about the incident in this image."),
+        TextContent(text = "Explain this image."),
         DataContent(
             data = image_bytes,
             media_type = "image/png"
