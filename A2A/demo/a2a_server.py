@@ -117,3 +117,5 @@ async def main():
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+# http://localhost:8080/.well-known/agent-card.json
